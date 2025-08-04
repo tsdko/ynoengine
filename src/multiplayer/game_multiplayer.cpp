@@ -279,6 +279,9 @@ void Game_Multiplayer::InitConnection() {
 		int x = Utils::Clamp(p.x, 0, Game_Map::GetTilesX() - 1);
 		int y = Utils::Clamp(p.y, 0, Game_Map::GetTilesY() - 1);
 		player.mvq.emplace_back(x, y);
+		// FIXME: diagonal movement updates facing based on *existing* facing,
+		// which means throwing it away here can result in wrong final facing
+		player.queued_facing = -1;
 	});
 	connection.RegisterHandler<JumpPacket>("jmp", [this] (JumpPacket& p) {
 		if (players.find(p.id) == players.end()) return;
@@ -294,7 +297,7 @@ void Game_Multiplayer::InitConnection() {
 		if (players.find(p.id) == players.end()) return;
 		auto& player = players[p.id];
 		int facing = Utils::Clamp(p.facing, 0, 3);
-		player.ch->SetFacing(facing);
+		player.queued_facing = facing;
 	});
 	connection.RegisterHandler<SpeedPacket>("spd", [this] (SpeedPacket& p) {
 		if (players.find(p.id) == players.end()) return;
@@ -857,6 +860,10 @@ void Game_Multiplayer::Update() {
 				if (!ch->IsMultiplayerVisible()) {
 					ch->SetMultiplayerVisible(true);
 				}
+			}
+			if (q.empty() && ch->IsStopping() && p.second.queued_facing != -1) {
+				ch->SetFacing(p.second.queued_facing);
+				p.second.queued_facing = -1;
 			}
 			if (ch->IsMultiplayerVisible() && ch->GetBaseOpacity() < 32) {
 				ch->SetBaseOpacity(ch->GetBaseOpacity() + 1);

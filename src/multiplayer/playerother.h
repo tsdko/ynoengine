@@ -12,6 +12,7 @@ struct BattleAnimation;
 struct PlayerOther {
 	bool account; // player is on an account
 	std::deque<std::pair<int, int>> mvq; // queue of move commands
+	int queued_facing{-1}; // facing to apply after mvq is drained
 	std::unique_ptr<Game_PlayerOther> ch; // character
 	std::unique_ptr<Sprite_Character> sprite;
 	std::unique_ptr<ChatName> chat_name;
